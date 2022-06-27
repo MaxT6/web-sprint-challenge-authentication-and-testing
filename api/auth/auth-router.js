@@ -27,22 +27,27 @@ post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
-  try {
-    const {username, password} = req.body
-    const authUser = await User.findBy({username}).first();
-      if (authUser.username && bcrypt.compareSync(password, authUser.password)) {
-        const token = generateToken(authUser);
-        res.status(200).json({message: `welcome, ${authUser.username}`, token})
-      } else if(!username || !password) {
-        res.status(400).json({message: "username and password required"})
-      } else {
-        next({ status: 401, message: 'invalid credentials'})
-      }
-  } catch(err) {
-    next(err)
+router.post('/login', (req, res, next) => {
+  if (!req.body.username || !req.body.password) {
+      res.status(401).json({ message: "username and password required" })
+      return;
   }
-  
+
+  let { username, password } = req.body;
+
+  User.findBy({ username })
+      .then(([user]) => {
+
+          if (user && bcrypt.compareSync(password, user.password)) {
+              const token = generateToken(user);
+              res.status(200).json({ message: `welcome, ${user.username}`, token })
+          } else if (!username || !password) {
+              res.status(400).json({ message: "username and password required" })
+
+          } else {
+              next({ status: 401, message: 'invalid credentials' })
+          }
+      })
 });
 
 function generateToken(user) {
