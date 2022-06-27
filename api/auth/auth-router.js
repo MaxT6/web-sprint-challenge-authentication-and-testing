@@ -10,17 +10,18 @@ router.
 post('/register', async (req, res, next) => {
   try{
       const {username, password } = req.body;
-      if (!username || username == undefined || !password) {
+      if (!username || !password) {
         res.status(404).json({message: "username and password required"})
       } else if(username) {
-        await User.findBy({ username }).first();
-        next({status: 400, message: "username taken"})
-        return;
-      } else {
-        const hash = bcrypt.hashSync(password, 8);
+        const takenUser = await User.findBy({ username }).first();
+        if (takenUser) {
+          next({status: 400, message: "username taken"})
+        } else {
+          const hash = bcrypt.hashSync(password, 8);
         const newUser = await User.add({ username, password: hash})
         res.status(201).json(newUser)
-      }
+        }
+      } 
   } catch(err) {
     next(err)
   }
